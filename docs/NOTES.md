@@ -91,3 +91,27 @@ Three times a run on IA64 came back empty right after an sftp upload: the ssh se
 failed at once, vms.sh found no DONE marker and no log, and printed nothing. vms.sh now
 retries an ssh that fails before the procedure starts (no log on the node) and says when
 it has no complete log.
+
+## N12. Screen size when output is not a terminal (2026-10-26)
+
+With SYS$OUTPUT a file, get_tty()'s SENSEMODE fails and gives 0 x 0; mch_get_shellsize()
+used it, and Vim made the screen 12 columns by 2 lines. Upstream's tests (run with
+--not-a-term, output to a file) all failed with "E36: Not enough room". Patch 0008 returns
+FAIL so Vim keeps 80 x 24, as on Unix.
+
+## N13. Upstream's test suite (src/testdir) on VMS (2026-10-26, x86-64)
+
+testdir/Make_vms.mms (2020) runs only the old test20-27 and test77a scripts, in a new
+DECterm (needs an X display). The modern suite (320 test_*.vim files with runtest.vim) was
+never set up for VMS: util/vms.vim sources util/setup.vim, which sets
+$HOME = getcwd() .. '/XfakeHOME' and mkdir()s it. On VMS getcwd() is
+`DEV:[DIR.TESTDIR]`, and mkdir() of that mixed spec fails (E739), so no test starts.
+tools/vimtests.sh and [.VMS]RUN_TESTS.COM run chosen tests with input from NL: and report
+runtest.vim's summary; getting the suite going needs the mkdir() fix below first.
+
+mkdir() with mixed VMS and Unix specs: a probe of seven forms (`getcwd() .. '/xa'`, `xb`,
+`./xc`, `[.xd]`, `xf/xg`, `getcwd() .. '/xh/xi'`, `expand('~') .. '/x'`, all with 'p')
+left VIM.EXE spinning on x86-64, so one of them loops (mkdir_recurse() with VMS's path
+separators, filepath.c vim_ispathsep() treats : [ ] < > / all as separators). This also
+matters outside the tests: vimrc lines like `call mkdir(expand('~/.vim/undo'), 'p')` are
+common. Next: run the forms one at a time (each with a CPU-time limit) and fix.

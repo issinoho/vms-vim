@@ -1,0 +1,24 @@
+Subject: VMS: mch_get_shellsize() fails when the size is unknown
+
+When SYS$OUTPUT is not a terminal, get_tty()'s SENSEMODE fails and returns
+a width and page length of 0. mch_get_shellsize() still set Rows and
+Columns from them and returned OK, and check_shellsize() then made the
+screen as small as Vim allows (2 lines of 12 columns): with --not-a-term
+and output to a file, as upstream's test suite runs, every test failed with
+"E36: Not enough room". Return FAIL and keep the old size instead, as
+os_unix.c does.
+
+--- a/src/os_vms.c
++++ b/src/os_vms.c
+@@ -205,6 +205,11 @@
+     TT_MODE	tmode;
+ 
+     tmode = get_tty();			// get size from VMS
++    // Not a terminal (output to a file or a mailbox): the size is unknown.
++    // Keep the old values (80 x 24 at first), as os_unix.c does; 0 x 0 would
++    // become the smallest possible screen.
++    if (tmode.width == 0 || tmode.x.y.length == 0)
++	return FAIL;
+     Columns = tmode.width;
+     Rows = tmode.x.y.length;
+     return OK;

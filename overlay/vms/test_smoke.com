@@ -161,7 +161,7 @@ $! --- the runtime: VIMRUNTIME, syntax, filetype, help ---------------------
 $ if f$search("''rtdir'DEFAULTS.VIM") .eqs. ""
 $ then
 $   write sys$output "SKIP runtime: no ''rtdir'DEFAULTS.VIM (push.sh <node> runtime)"
-$   skip == skip + 4
+$   skip == skip + 5
 $   goto runtime_done
 $ endif
 $ define/nolog vimruntime 'rtdir'
@@ -177,6 +177,11 @@ $ call check filetype-dcl "got .eqs. ""dcl"""
 $ 'vq' "+help os_vms" "+call writefile([expand('%:t'), getline('.')], 'help.txt')" "+qa!"
 $ call readall help.txt
 $ call check help "f$locate(""os_vms.txt|*os_vms.txt*"", got) .eq. 0"
+$! vimtutor: tutor.vim copies the lesson to $TUTORCOPY (a logical name here).
+$ define/user tutorcopy tut.txt
+$ 'vq' "+source $VIMRUNTIME/tutor/tutor.vim"
+$ call findline tut.txt "V I M   T u t o r"
+$ call check vimtutor "found"
 $ 'vq' "+helptags ALL" "+qa!"
 $ st = $status
 $ call check helptags "st"
