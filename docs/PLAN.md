@@ -67,7 +67,7 @@ PRODUCT REMOVE leaves nothing. Patch 0010 was needed for the case fix-up.
 
 - Motif build (GVIM.EXE) with DECwindows, shown over Xephyr on the laptop.
 
-## Phase 4: release
+## Phase 4: release (2026-10-26, user's go-ahead)
 
 - The family release process: tag v9.2.1240-vms1, GitHub release with both kits and
   SHA256SUMS, entry in vms-grep/site/projects.json and the vms-grep README.
