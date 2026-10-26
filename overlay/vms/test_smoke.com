@@ -195,14 +195,25 @@ $ define/user tutorcopy tut.txt
 $ 'vq' "+source $VIMRUNTIME/tutor/tutor.vim"
 $ call findline tut.txt "V I M   T u t o r"
 $ call check vimtutor "found"
-$ 'vq' "+helptags ALL" "+qa!"
-$ st = $status
-$ call check helptags "st"
+$! (Not into an installed runtime: PRODUCT REMOVE would leave the new tags.)
+$ if p3 .eqs. ""
+$ then
+$   'vq' "+helptags ALL" "+qa!"
+$   st = $status
+$   call check helptags "st"
+$ else
+$   write sys$output "SKIP helptags: an installed runtime"
+$   skip == skip + 1
+$ endif
 $ deassign vimruntime
 $runtime_done:
 $!
 $! --- xxd: a round trip of a binary file --------------------------------
-$ xxd -l 4096 -p 'image' a.hex
+$! A binary file to dump: this tree's own image, readable even when an
+$! installed VIM.EXE is execute-only for us.
+$ bin = f$search("[-.SRC.''arch']VIM.EXE")
+$ if bin .eqs. "" then bin = image
+$ xxd -l 4096 -p 'bin' a.hex
 $ xxd -r -p a.hex b.bin
 $ xxd -p b.bin b.hex
 $ define/user sys$output nl:
@@ -213,9 +224,10 @@ $ call check xxd-roundtrip "sev .eq. 1"
 $ call firstline a.hex
 $ call check xxd-dump "f$length(line) .eq. 60"
 $! :%!xxd from inside Vim needs TMP and a subprocess.
-$ 'vq' "+%!xxd" "+w! filt.txt" "+qa!" hello.c
+$ 'vq' "+%!xxd" "+w! filt.txt" "+call writefile([v:shell_error, v:errmsg], 'filterr.txt')" "+qa!" hello.c
 $ call firstline filt.txt
 $ call check vim-filter "f$locate(""00000000: 2369 6e63"", line) .eq. 0"
+$ if f$locate("00000000: 2369 6e63", line) .ne. 0 then type filterr.txt
 $!
 $finish:
 $ set default 'vmsdir'

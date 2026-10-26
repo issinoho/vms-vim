@@ -3,6 +3,7 @@ $! the installed image, then remove it.  Changes the system while it runs (PCSI
 $! database, SYS$COMMON:[VIM], system logicals VIM$ROOT, VIM, VIMRUNTIME);
 $! leaves it as it was.
 $ set noon
+$ set process/parse_style=extended
 $ arch = f$edit(f$getsyi("ARCH_NAME"), "UPCASE")
 $ base = "I64VMS"
 $ if arch .eqs. "X86_64" then base = "X86VMS"
@@ -24,26 +25,27 @@ $ show symbol view
 $ define/user sys$output sys$scratch:vimver.txt
 $ vim "--version"
 $ open/read v sys$scratch:vimver.txt
-$ read v line
+$ read v verline
 $ close v
 $ delete/nolog sys$scratch:vimver.txt;*
-$ write sys$output "version: ", line
+$ write sys$output "version: ", verline
 $! The runtime has its real names again (VIM$CASE.VIM).
-$ write sys$output "case c.vim: [", f$search("VIMRUNTIME:[syntax]c.vim"), "]"
-$ write sys$output "case json: [", f$search("VIM$ROOT:[VIM92.tutor.en]vim-01-beginner^.tutor.json"), "]"
-$ write sys$output "case README.txt: [", f$search("VIM$ROOT:[VIM92]README.txt"), "]"
-$ write sys$output "case matchit: [", f$search("VIM$ROOT:[VIM92.pack.dist.opt]matchit.DIR"), "]"
-$ n = 0
+$ write sys$output "=== NAMES (as stored)"
+$ directory/noheading/notrailing VIM$ROOT:[VIM92]*.VIM,VIM$ROOT:[VIM92]*.DIR
+$ directory/noheading/notrailing VIM$ROOT:[VIM92.syntax]c*.vim
+$ directory/noheading/notrailing VIM$ROOT:[VIM92.pack.dist.opt]*.DIR
+$ directory/noheading/notrailing/protection/owner VIM$ROOT:[BIN]*.EXE,VIM$ROOT:[VIM92]defaults.vim,VIM$ROOT:[VIM92]syntax.DIR
+$ nrt = 0
 $ nupper = 0
 $count:
-$ f = f$search("VIM$ROOT:[VIM92...]*.*;", 1)
-$ if f .eqs. "" then goto counted
-$ n = n + 1
-$ name = f$parse(f,,,"NAME") + f$parse(f,,,"TYPE")
-$ if name .eqs. f$edit(name, "UPCASE") .and. name .nes. f$edit(name, "LOWERCASE") then nupper = nupper + 1
+$ rtf = f$search("VIM$ROOT:[VIM92...]*.*;", 1)
+$ if rtf .eqs. "" then goto counted
+$ nrt = nrt + 1
+$ rtname = f$parse(rtf,,,"NAME") + f$parse(rtf,,,"TYPE")
+$ if rtname .eqs. f$edit(rtname, "UPCASE") .and. rtname .nes. f$edit(rtname, "LOWERCASE") then nupper = nupper + 1
 $ goto count
 $counted:
-$ write sys$output "runtime files: ''n', all upper case: ''nupper'"
+$ write sys$output "runtime files: ''nrt', all upper case: ''nupper'"
 $ write sys$output "=== SMOKE TEST on installed image"
 $ smoke = tree - "]" + ".VMS]TEST_SMOKE.COM"
 $ @'smoke' VIM$ROOT:[BIN]VIM.EXE VIM$ROOT:[BIN]XXD.EXE VIM$ROOT:[VIM92]

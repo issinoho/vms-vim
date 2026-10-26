@@ -54,13 +54,20 @@ $!
 $! PCSI stores every file name in upper case; Vim's runtime has lower-case and
 $! mixed-case names (scripts look for them so).  VIM$CASE.VIM renames each
 $! file and directory under [VIM92] back to its real name.
+$! Renaming a directory file needs delete access, which PCSI does not give:
+$! add it for the system and owner categories while renaming, then put back
+$! what PCSI set ("SYSTEM=RWE, OWNER=RWE, GROUP=RE, WORLD=RE").
 $ saved_parse = f$getjpi("", "PARSE_STYLE_PERM")
 $ set process/parse_style=extended
+$ pro = f$file_attributes("VIM$ROOT:[000000]VIM92.DIR", "PRO")
+$ sys_access = f$element(1, "=", f$element(0, ",", pro))
+$ own_access = f$element(1, "=", f$element(1, ",", pro))
+$ set protection=(s:rwed,o:rwed) VIM$ROOT:[VIM92...]*.DIR;*
 $ vimexe = "$VIM$ROOT:[BIN]VIM.EXE"
 $ define/user sys$input nl:
 $ define/user sys$output nl:
 $ vimexe -es -u NONE -i NONE -n "+source VIM$ROOT:[000000]VIM$CASE.VIM"
-$ case_status = $status
+$ set protection=(s:'sys_access',o:'own_access') VIM$ROOT:[VIM92...]*.DIR;*
 $ set process/parse_style='saved_parse'
 $! VIM$CASE.VIM lists any name it could not change in SYS$SCRATCH:VIM$CASE.ERR.
 $ if f$search("SYS$SCRATCH:VIM$CASE.ERR") .nes. ""

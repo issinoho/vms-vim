@@ -173,3 +173,21 @@ has two such names, lang/menu_chinese(gb)_gb.936.vim and
 lang/menu_chinese(taiwan)_taiwan.950.vim: menu translations for Chinese GB2312 and Big5
 locales, used only by Vim's menus. gen_kit.py leaves them out and lists them; installing
 them under another name would leave PRODUCT REMOVE unable to find them.
+
+## N20. First install checks on x86-64 (2026-10-26)
+
+PRODUCT INSTALL took about 5 minutes; `vim --version` from VIM$ROOT:[BIN] is right and
+PRODUCT REMOVE deassigns the logical names. What the checks found:
+- The case fix-up renamed every file, but no directory: renaming a directory file needs
+  delete access, and PCSI makes directories (RWE,RWE,RE,RE). VIM$STARTUP.COM now adds D
+  for system and owner while VIM$CASE.VIM runs, then puts back what PCSI set.
+- `.editorconfig` (pack/dist/opt/editorconfig) has no name part; rename() could not give
+  it one, left it as 123.editorconfig, and PRODUCT REMOVE then left that and its
+  directories behind. VIM$CASE.VIM no longer touches such names.
+- The smoke test's :helptags ALL wrote new tags files into the installed runtime, which
+  PRODUCT REMOVE does not know about: it is skipped for an installed runtime now.
+- Two "failures" were the test's: a local symbol in the calling procedure (VERSION's
+  LINE) hid the smoke test's global one. DCL lets inner procedures see outer locals.
+- With the traditional parse style, F$SEARCH returns names in upper case; check case with
+  the extended style.
+The leftovers of the first two runs (SYS$COMMON:[VIM.VIM92.PACK...]) were removed by hand.

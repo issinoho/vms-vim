@@ -105,6 +105,10 @@ def main():
                 'endfunc\n')
         for parts, f in files:
             n = vms_name(f)
+            # A name with no name part (".editorconfig"): rename() cannot make
+            # one, it would be left under its temp name; keep PCSI's.
+            if n.startswith('.'):
+                continue
             if n != n.upper():
                 c.write("call s:R(%s, %s, '')\n" % (vimstr(vms_dir(parts)), vimstr(n)))
         # Directories last, deepest first (names are looked up without case, so
