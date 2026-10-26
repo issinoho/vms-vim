@@ -191,3 +191,11 @@ PRODUCT REMOVE deassigns the logical names. What the checks found:
 - With the traditional parse style, F$SEARCH returns names in upper case; check case with
   the extended style.
 The leftovers of the first two runs (SYS$COMMON:[VIM.VIM92.PACK...]) were removed by hand.
+
+## N21. vimdiff was debug mode with PARSE_STYLE=EXTENDED (2026-10-26, vms2)
+
+Found after installing vms1 for daily use: VIM$SETUP.COM defined `vimdiff :== $...VIM.EXE
+-d` unquoted, so DCL stored "-D". With the traditional parse style the C RTL lowercases it
+again; with PARSE_STYLE=EXTENDED Vim got -D, debug mode, and `vimdiff a b` did not diff.
+VIM$SETUP.COM now quotes every definition; the install check runs vimdiff and view under
+both parse styles. Kit 9.2.1240-vms2 (V9.2-1240E2).

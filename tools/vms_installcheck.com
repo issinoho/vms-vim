@@ -22,6 +22,42 @@ $ show logical VIMRUNTIME
 $ @VIM$ROOT:[000000]VIM$SETUP.COM
 $ show symbol vim
 $ show symbol view
+$! vimdiff and view must pass -d and -R with either parse style.
+$ create sys$scratch:vda.txt
+one
+$ create sys$scratch:vdb.txt
+two
+$ style = "TRADITIONAL"
+$vd_loop:
+$ set process/parse_style='style'
+$ if f$search("sys$scratch:vd.txt") .nes. "" then delete/nolog sys$scratch:vd.txt;*
+$ define/user sys$input nl:
+$ vimdiff -es -u NONE -i NONE -n "+call writefile([&diff, &readonly], 'sys$scratch:vd.txt')" "+qa!" sys$scratch:vda.txt sys$scratch:vdb.txt
+$ vd_diff = "missing"
+$ if f$search("sys$scratch:vd.txt") .nes. ""
+$ then
+$   open/read vdf sys$scratch:vd.txt
+$   read vdf vd_diff
+$   close vdf
+$   delete/nolog sys$scratch:vd.txt;*
+$ endif
+$ define/user sys$input nl:
+$ view -es -u NONE -i NONE -n "+call writefile([&readonly], 'sys$scratch:vd.txt')" "+qa!" sys$scratch:vda.txt
+$ vd_ro = "missing"
+$ if f$search("sys$scratch:vd.txt") .nes. ""
+$ then
+$   open/read vdf sys$scratch:vd.txt
+$   read vdf vd_ro
+$   close vdf
+$   delete/nolog sys$scratch:vd.txt;*
+$ endif
+$ write sys$output "symbols ''style': vimdiff diff=''vd_diff' view readonly=''vd_ro'"
+$ if style .eqs. "TRADITIONAL"
+$ then
+$   style = "EXTENDED"
+$   goto vd_loop
+$ endif
+$ delete/nolog sys$scratch:vda.txt;*,sys$scratch:vdb.txt;*
 $ define/user sys$output sys$scratch:vimver.txt
 $ vim "--version"
 $ open/read v sys$scratch:vimver.txt

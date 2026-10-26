@@ -12,12 +12,14 @@ $ then
 $   write sys$error "VIM$SETUP: VIM$ROOT is not defined; run SYS$STARTUP:VIM$STARTUP.COM first"
 $   exit 44
 $ endif
-$ vim      :== $VIM$ROOT:[BIN]VIM.EXE
-$ vi       :== $VIM$ROOT:[BIN]VIM.EXE
-$ view     :== $VIM$ROOT:[BIN]VIM.EXE -/r
-$ vimdiff  :== $VIM$ROOT:[BIN]VIM.EXE -d
-$ vimtutor :== @VIM$ROOT:[000000]VIMTUTOR.COM
-$ xxd      :== $VIM$ROOT:[BIN]XXD.EXE
+$! Quoted, so the options keep their case: unquoted, DCL stores "-D", which
+$! with PARSE_STYLE=EXTENDED reaches Vim as -D (debug mode), not -d (diff).
+$ vim      :== "$VIM$ROOT:[BIN]VIM.EXE"
+$ vi       :== "$VIM$ROOT:[BIN]VIM.EXE"
+$ view     :== "$VIM$ROOT:[BIN]VIM.EXE -/r"
+$ vimdiff  :== "$VIM$ROOT:[BIN]VIM.EXE -d"
+$ vimtutor :== "@VIM$ROOT:[000000]VIMTUTOR.COM"
+$ xxd      :== "$VIM$ROOT:[BIN]XXD.EXE"
 $! Vim and xxd need TMP for filters, printing and some functions.
 $ if f$trnlnm("TMP") .eqs. "" then define/nolog tmp sys$scratch
 $ exit 1
