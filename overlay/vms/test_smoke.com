@@ -138,6 +138,17 @@ $ 'vq' "+call writefile([string(systemlist('write sys$output ""one""')), string(
 $ call readall sys.txt
 $ call check systemlist "got .eqs. ""['one']|0"""
 $!
+$! --- $VIM is never the symbol VIM (the command itself): patch 0007 --------
+$ if f$trnlnm("VIM") .eqs. ""
+$ then
+$   'vq' "+call writefile([$VIM], 'env.txt')" "+qa!"
+$   call readall env.txt
+$   call check env-no-symbol "f$locate(""VIM.EXE"", f$edit(got, ""UPCASE"")) .eq. f$length(got)"
+$ else
+$   write sys$output "SKIP env-no-symbol: the logical name VIM is defined"
+$   skip == skip + 1
+$ endif
+$!
 $! --- a vimrc that is a VAR file (as EDIT makes), with -u ----------------
 $ create rc.vim
 set shiftwidth=3

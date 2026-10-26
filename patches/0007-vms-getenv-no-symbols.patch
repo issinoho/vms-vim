@@ -1,0 +1,51 @@
+Subject: VMS: mch_getenv(): logical names and the C environment, not symbols
+
+mch_getenv() translates a logical name and otherwise calls getenv(). The C
+RTL's getenv() falls back to DCL symbols, and Vim is usually run with one,
+vim :== $dev:[dir]VIM.EXE. Without a VIM logical name, $VIM was therefore
+"$dev:[dir]VIM.EXE;", $VIMRUNTIME followed from it, and :help failed with
+"E149: Sorry, no help for help.txt". Any option or variable sharing its
+name with a symbol was affected the same way.
+
+After logical names, look only in the C environment (HOME, TERM, PATH, USER
+and whatever setenv() added), never in DCL symbols. Without VIM and
+VIMRUNTIME logicals Vim then falls back to 'helpfile' and the executable's
+name, as on other systems.
+
+--- a/src/os_vms.c
++++ b/src/os_vms.c
+@@ -262,6 +262,25 @@
+ }
+ # endif
+ 
++/*
++ * Look up "name" in the C environment only: HOME, TERM, PATH, USER and what
++ * setenv() added.  Not getenv(): after the environment and logical names it
++ * also returns DCL symbols, and the command that runs Vim is usually one,
++ * vim :== $dev:[dir]VIM.EXE, so $VIM became the image's file name.
++ */
++    static char *
++vms_environ_get(char *name)
++{
++    extern char	**environ;
++    char	**e;
++    size_t	len = strlen(name);
++
++    for (e = environ; e != NULL && *e != NULL; ++e)
++	if (STRNICMP(*e, name, len) == 0 && (*e)[len] == '=')
++	    return *e + len + 1;
++    return NULL;
++}
++
+     char_u *
+ mch_getenv(char_u *lognam)
+ {
+@@ -286,7 +305,7 @@
+ 	    strcpy((char *)cp, buffer);
+ 	return(cp);
+     }
+-    else if ((sbuf = getenv((char *)lognam)))
++    else if ((sbuf = vms_environ_get((char *)lognam)))
+     {
+ 	lengte = strlen(sbuf) + 1;
+ 	cp = alloc(lengte);

@@ -24,7 +24,7 @@ Phase 1 (see [docs/PLAN.md](docs/PLAN.md)).
 | Step | IA64 (V8.4-2L3) | x86-64 (E9.2-4) |
 |------|-----------------|-----------------|
 | Build with upstream's Make_vms.mms + patch 0001 (`tools/build.sh`) | clean | clean |
-| DCL smoke test, 25 checks (`tools/test.sh`) | 25/25 | 25/25 |
+| DCL smoke test, 26 checks (`tools/test.sh`) | 26/26 | 26/26 |
 | Interactive test, 20 checks (`tools/ttytest.sh`) | 20/20 | 20/20 |
 
 ## Workflow
@@ -48,5 +48,6 @@ tools/ttytest.sh <node>                        # interactive test from the host 
 | `0004-vms-fopen-record-files` | `:source`, readfile(), system() on VAR/VFC files ran the lines together ([N5](docs/NOTES.md)) |
 | `0005-vms-settmode-sleep-deccolm` | `:!cmd` output wiped by DECCOLM; CTRL-C while sleeping ([N7](docs/NOTES.md)) |
 | `0006-vms-breakcheck-tmode` | CTRL-C interrupted nothing ([N8](docs/NOTES.md)) |
+| `0007-vms-getenv-no-symbols` | `$VIM` was the DCL symbol `vim` (the command itself) ([N10](docs/NOTES.md)) |
 | `vms/build.com` | Runs upstream's Make_vms.mms for VIM.EXE and XXD.EXE |
 | `vms/test_smoke.com`, `tools/ttytest.py` | Smoke test (DCL, `vim -es`) and interactive test (pexpect + pyte over ssh) |

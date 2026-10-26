@@ -77,8 +77,17 @@ Vim's exit status is %X00030001 (success severity, with a facility code).
 ## N10. $VIMRUNTIME without the VIM or VIMRUNTIME logicals (2026-10-26)
 
 With neither logical defined, Vim derives $VIMRUNTIME from how it was started, and with a
-foreign command (`vim :== $dev:[dir]VIM.EXE`) gets `$dev:[dir]VIM.EXE;`: the symbol's `$`
-and the file name stay in, so :help fails ("E149: Sorry, no help for help.txt"). The kit
-defines both logicals (D5), so installed Vim is not affected; to look at for a patch.
+foreign command (`vim :== $dev:[dir]VIM.EXE`) got `$dev:[dir]VIM.EXE;`, and :help failed
+("E149: Sorry, no help for help.txt"). The cause: mch_getenv() falls back to getenv(), which
+returns DCL symbols, and $VIM was the symbol VIM, the command itself (as LESS was for
+vms-less). Patch 0007 looks only in logical names and the C environment. The kit defines
+both logicals anyway (D5).
 Also: f$parse() returns ODS-5 names in the case they were made (lower case on IA64), so
 the tests build directory specs from its DEVICE and DIRECTORY fields.
+
+## N11. vms.sh: empty results from the IA64 node (2026-10-26)
+
+Three times a run on IA64 came back empty right after an sftp upload: the ssh session
+failed at once, vms.sh found no DONE marker and no log, and printed nothing. vms.sh now
+retries an ssh that fails before the procedure starts (no log on the node) and says when
+it has no complete log.

@@ -50,9 +50,22 @@ dcl_logged() {
       echo "\$ open/write vmsrun_done ${WORKDIR}${tag}.DONE"
       echo '$ close vmsrun_done'; } > "$com"
     sftp_batch "cd $SFTPDIR" "put $com $tag.com"
-    ssh -p "$PORT" "${ssh_opts[@]}" "$USER@$HOST" \
-        "@${WORKDIR}${tag}.COM/OUTPUT=${WORKDIR}${tag}.LOG" >/dev/null 2>&1 &
-    local pid=$! waited=0 limit=${VMS_TIMEOUT:-600}
+    local sshlog=$(mktemp) try
+    # An ssh that fails at once (the IA64 node sometimes refuses a session
+    # just after an sftp one) used to give an empty result: retry, then report.
+    for try in 1 2 3; do
+        ssh -p "$PORT" "${ssh_opts[@]}" "$USER@$HOST" \
+            "@${WORKDIR}${tag}.COM/OUTPUT=${WORKDIR}${tag}.LOG" >/dev/null 2>"$sshlog" &
+        local pid=$!
+        sleep 5
+        kill -0 "$pid" 2>/dev/null && break
+        wait "$pid" && break
+        sftp_batch "cd $SFTPDIR" "get $tag.LOG $out" 2>/dev/null && break
+        echo "vms.sh: ssh to $node failed (try $try): $(tr '\n' ' ' < "$sshlog")" >&2
+        sleep 10
+    done
+    rm -f "$sshlog"
+    local waited=0 limit=${VMS_TIMEOUT:-600}
     while :; do
         sleep 2; waited=$((waited + 2))
         if ! kill -0 "$pid" 2>/dev/null || [ $((waited % 10)) -eq 0 ]; then
@@ -70,6 +83,8 @@ dcl_logged() {
     done
     kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true
     sftp_batch "cd $SFTPDIR" "-rm $tag.com" "-rm $tag.LOG" "-rm $tag.DONE" || true
+    grep -aq '^VMSRUN-END' "$out" 2>/dev/null ||
+        echo "vms.sh: no complete log from $node ($tag)" >&2
     tr -d '\r' < "$out" | grep -av '^VMSRUN-END' || true
     rm -f "$com" "$out" "$done_f"
 }
