@@ -30,7 +30,10 @@ PCSI takes V9.2-1240E1 (N1).
 Exit: VIM.EXE and XXD.EXE build on both nodes and `vim --version` runs (done); the user
 signs off this plan and D1-D7.
 
-## Phase 1: the editor works
+## Phase 1: the editor works (started 2026-10-26)
+
+Status 2026-10-26: patches 0002-0006 (N3-N8). x86-64: smoke test 24/24, interactive test
+19/20 (the exit-status check was too strict, now fixed). IA64 being rebuilt.
 
 - Smoke test (tools/test.sh, DCL, non-interactive): `-version`, `-es` scripts that edit and
   write files of each record format (STREAM_LF, VAR, VFC), new file versions, xxd round trip.

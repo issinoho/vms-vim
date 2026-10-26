@@ -19,12 +19,13 @@ see [vms-grep](https://github.com/issinoho/vms-grep) for the list.
 
 ## Status
 
-Phase 0 (see [docs/PLAN.md](docs/PLAN.md)).
+Phase 1 (see [docs/PLAN.md](docs/PLAN.md)).
 
 | Step | IA64 (V8.4-2L3) | x86-64 (E9.2-4) |
 |------|-----------------|-----------------|
 | Build with upstream's Make_vms.mms + patch 0001 (`tools/build.sh`) | clean | clean |
-| `vim --version`, xxd | run | run |
+| DCL smoke test, 24 checks (`tools/test.sh`) | | 24/24 |
+| Interactive test, 20 checks (`tools/ttytest.sh`) | | 19/20 |
 
 ## Workflow
 
@@ -32,6 +33,9 @@ Phase 0 (see [docs/PLAN.md](docs/PLAN.md)).
 cp tools/nodes.conf.example tools/nodes.conf   # then fill in the real nodes
 tools/prepare.sh                               # fetch and verify the tag, patch, stage
 tools/build.sh <node>                          # push and build with MMS
+tools/push.sh <node> runtime                   # once: the runtime files, for the tests
+tools/test.sh <node>                           # smoke test (non-interactive, on VMS)
+tools/ttytest.sh <node>                        # interactive test from the host (pexpect, pyte)
 ```
 
 ## What the port changes
@@ -39,4 +43,10 @@ tools/build.sh <node>                          # push and build with MMS
 | Change | Why |
 |---|---|
 | `0001-vms-mch-calc-cell-size` | Upstream 9.2 calls mch_calc_cell_size(), which VMS lacked: VIM.EXE did not link ([N2](docs/NOTES.md)) |
+| `0002-termlib-strncpy-casts` | The only compiler warnings in the VMS build ([N3](docs/NOTES.md)) |
+| `0003-vms-read-non-terminal-input` | Input from a file or mailbox: Vim looped for ever ([N4](docs/NOTES.md)) |
+| `0004-vms-fopen-record-files` | `:source`, readfile(), system() on VAR/VFC files ran the lines together ([N5](docs/NOTES.md)) |
+| `0005-vms-settmode-sleep-deccolm` | `:!cmd` output wiped by DECCOLM; CTRL-C while sleeping ([N7](docs/NOTES.md)) |
+| `0006-vms-breakcheck-tmode` | CTRL-C interrupted nothing ([N8](docs/NOTES.md)) |
 | `vms/build.com` | Runs upstream's Make_vms.mms for VIM.EXE and XXD.EXE |
+| `vms/test_smoke.com`, `tools/ttytest.py` | Smoke test (DCL, `vim -es`) and interactive test (pexpect + pyte over ssh) |

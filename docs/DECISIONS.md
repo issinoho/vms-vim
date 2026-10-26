@@ -1,6 +1,6 @@
 # Decisions
 
-Proposed 2026-10-26; awaiting the user's sign-off.
+Proposed and signed off by the user 2026-10-26 (D3: terminal first; ask before Phase 3).
 
 ## D1. Source: upstream's signed tags, upstream's VMS build
 

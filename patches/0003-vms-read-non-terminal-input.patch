@@ -1,0 +1,43 @@
+Subject: VMS: read input that is not a terminal with read()
+
+vms_read() and RealWaitForChar() always use terminal-driver QIOs on a
+channel assigned to SYS$OUTPUT. When the input is a file or a mailbox
+(DEFINE/USER SYS$INPUT, PIPE, a batch job or a command procedure) and so
+SYS$OUTPUT is usually not a terminal either, the QIOs fail, vms_read()
+returns no characters and RealWaitForChar() reports nothing to read, so
+Vim loops for ever using all the CPU: "vim -es <script" never ends.
+
+When read_cmd_fd is not a terminal, read it with read() as os_unix.c does
+(the C RTL returns one record per call, with its newline), and report it
+as always ready. The end of the input then ends Vim as on Unix.
+
+--- a/src/os_vms.c
++++ b/src/os_vms.c
+@@ -347,6 +347,16 @@
+     ITEM	itmlst[2];     // terminates on everything
+     static long trm_mask[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+ 
++    // Input from a file or a mailbox (DEFINE SYS$INPUT, PIPE, a batch job or a
++    // command procedure) cannot be read with the terminal driver's QIOs: read
++    // it with read(), as on Unix, so that "vim -es <script" works and the end
++    // of the input is seen.
++    if (!isatty(read_cmd_fd))
++    {
++	len = read(read_cmd_fd, inbuf, nbytes);
++	return len < 0 ? 0 : len;
++    }
++
+     // whatever happened earlier we need an iochan here
+     if (!iochan)
+ 	tt_mode = get_tty();
+@@ -849,6 +859,10 @@
+     unsigned int convert_operation = LIB$K_DELTA_SECONDS_F;
+     float sec =(float) msec/1000;
+ 
++    // Input that is not a terminal is always ready; vms_read() reads it.
++    if (!isatty(read_cmd_fd))
++	return 1;
++
+     // make sure the iochan is set
+     if (!iochan)
+ 	get_tty();

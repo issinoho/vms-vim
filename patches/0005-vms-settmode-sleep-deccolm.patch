@@ -1,0 +1,50 @@
+Subject: VMS: keep CTRL-C working while sleeping; no DECCOLM unless needed
+
+mch_settmode() treats every mode other than TMODE_RAW as cooked: it puts
+back the terminal's original mode (without PASTHRU) and sends DECCOLM
+(ESC [ ? 3 l or h) for the original width.
+
+- mch_delay() sets TMODE_SLEEP for sleeps over half a second. In the original
+  mode the terminal driver takes CTRL-C itself, so CTRL-C never reached Vim:
+  ":sleep 30" could not be interrupted. Keep TMODE_SLEEP raw, so CTRL-C is
+  typeahead that the next ui_breakcheck() reads.
+- DECCOLM clears the screen on VT terminals and DECterm even when the width
+  does not change. It was sent before every ":!cmd", so the command's output
+  was wiped and only the hit-enter prompt was left. Send it only when Vim has
+  changed the width (Columns differs from the original); still reset the
+  keypad (ESC >).
+
+--- a/src/os_vms.c
++++ b/src/os_vms.c
+@@ -116,16 +116,24 @@
+ {
+     int	status;
+ 
+-    if ( tmode == TMODE_RAW )
++    // TMODE_SLEEP (mch_delay()) stays raw: in the original mode the terminal
++    // driver takes CTRL-C itself, so it never reaches Vim's input and cannot
++    // interrupt ":sleep" or a slow command.
++    if (tmode == TMODE_RAW || tmode == TMODE_SLEEP)
+ 	set_tty(0, 0);
+     else
+     {
+-	switch (orgmode.width)
+-	{
+-	    case 132:	OUT_STR_NF((char_u *)"\033[?3h\033>");	break;
+-	    case 80:	OUT_STR_NF((char_u *)"\033[?3l\033>");	break;
+-	    default:	break;
+-	}
++	// Restore the width only if Vim changed it: DECCOLM also clears the
++	// screen, which would wipe the output of every ":!cmd" before the
++	// hit-enter prompt.
++	if (Columns != orgmode.width)
++	    switch (orgmode.width)
++	    {
++		case 132:	OUT_STR_NF((char_u *)"\033[?3h");	break;
++		case 80:	OUT_STR_NF((char_u *)"\033[?3l");	break;
++		default:	break;
++	    }
++	OUT_STR_NF((char_u *)"\033>");
+ 	out_flush();
+ 	status = sys$qiow(0, iochan, IO$_SETMODE, iosb, 0, 0,
+ 					  &orgmode, sizeof(TT_MODE), 0,0,0,0);

@@ -1,1 +1,6 @@
 0001-vms-mch-calc-cell-size.patch
+0002-termlib-strncpy-casts.patch
+0003-vms-read-non-terminal-input.patch
+0004-vms-fopen-record-files.patch
+0005-vms-settmode-sleep-deccolm.patch
+0006-vms-breakcheck-tmode.patch

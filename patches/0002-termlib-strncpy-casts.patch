@@ -1,0 +1,27 @@
+Subject: termlib.c: cast the arguments of vim_strncpy()
+
+vim_strncpy() takes char_u pointers; tbuf, tmp and tcap are char. VSI C on
+VMS (the one platform that builds termlib.c) warns four times:
+%CC-W-PTRMISMATCH1 ... differ by signed/unsigned attribute. Cast them, as
+the rest of Vim does, so the VMS build is free of warnings.
+
+--- a/src/termlib.c
++++ b/src/termlib.c
+@@ -104,7 +104,7 @@
+ 		nexttmp  = _find(tmp, ":|");	// Rhialto
+ 		if (tmp+tlen == nexttmp && _match(tmp, term) == tlen)
+ 		{
+-		    vim_strncpy(tbuf, tmp, TBUFSZ - 1);
++		    vim_strncpy((char_u *)tbuf, (char_u *)tmp, TBUFSZ - 1);
+ 		    tent = tbuf;
+ 		    return 1;
+ 		}
+@@ -115,7 +115,7 @@
+     }
+     if (!(termcap = mch_fopen(tcap, "r")))
+     {
+-	vim_strncpy(tbuf, tcap, TBUFSZ - 1);
++	vim_strncpy((char_u *)tbuf, (char_u *)tcap, TBUFSZ - 1);
+ 	return -1;
+     }
+ 

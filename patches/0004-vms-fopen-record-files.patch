@@ -1,0 +1,63 @@
+Subject: VMS: read record files as text where Vim reads text in binary mode
+
+Vim opens text files with READBIN ("rb") and splits the lines itself, in
+:source, readfile(), get_cmd_output() (system() output, which DCL writes as
+a variable-length record file), viminfo, help, "-s" scripts and others. On
+VMS a binary stream on a VAR or VFC file returns the records without their
+line ends, so every line runs into the next: a .vimrc made with EDIT or
+DCL CREATE gives "E492: Not an editor command: set nocompatibleset ...".
+
+Route mch_fopen() through vms_fopen(), which opens VAR and VFC files in text
+mode when "rb" is asked for (the C RTL then ends each record with "\n"), and
+everything else as asked. Vim's own binary files are stream files.
+
+--- a/src/macros.h
++++ b/src/macros.h
+@@ -163,7 +163,7 @@
+ #ifdef VMS
+ # define mch_access(n, p)	access(vms_fixfilename(n), (p))
+ 				// see mch_open() comment
+-# define mch_fopen(n, p)	fopen(vms_fixfilename(n), (p))
++# define mch_fopen(n, p)	vms_fopen(vms_fixfilename(n), (p))
+ # define mch_fstat(n, p)	fstat((n), (p))
+ # undef HAVE_LSTAT		// VMS does not have lstat()
+ # define mch_stat(n, p)		stat(vms_fixfilename(n), (p))
+--- a/src/os_vms.c
++++ b/src/os_vms.c
+@@ -219,6 +219,27 @@
+     screen_start();
+ }
+ 
++/*
++ * fopen() for mch_fopen().
++ * Vim reads text files in binary mode ("rb") and finds the line ends itself:
++ * :source, readfile(), the output of system(), viminfo, help and others.  A
++ * binary stream on a record file (variable length or VFC, as made by EDIT,
++ * DCL CREATE and most VMS programs) gives the records without line ends, so
++ * all lines would run into one.  Read those files as text: each record then
++ * ends with "\n".  Stream files, and so Vim's own swap, undo and spell files,
++ * are opened as asked.
++ */
++    FILE *
++vms_fopen(char *name, char *mode)
++{
++    stat_T	st;
++
++    if (STRCMP(mode, "rb") == 0 && stat(name, &st) == 0
++	    && (st.st_fab_rfm == FAB$C_VAR || st.st_fab_rfm == FAB$C_VFC))
++	return fopen(name, "r");
++    return fopen(name, mode);
++}
++
+ # if defined(FEAT_EVAL) || defined(FEAT_IMAGE)
+ /*
+  * Try to get the current terminal cell size.  The VMS terminal driver knows
+--- a/src/proto/os_vms.pro
++++ b/src/proto/os_vms.pro
+@@ -12,5 +12,6 @@
+ int mch_expandpath(garray_T *gap, char_u *path, int flags);
+ void *vms_fixfilename(void *instring);
+ void vms_remove_version(void *fname);
++FILE *vms_fopen(char *name, char *mode);
+ int RealWaitForChar(int fd, long msec, int *check_for_gpm, int *interrupted);
+ // vim: ft=c

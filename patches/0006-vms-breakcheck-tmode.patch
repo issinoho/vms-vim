@@ -1,0 +1,30 @@
+Subject: VMS: let mch_breakcheck() and mch_delay() see the terminal mode
+
+os_unix.c keeps the terminal mode in a static mch_cur_tmode, set only by its
+own mch_settmode(), which VMS does not use (os_vms.c has its own). On VMS
+mch_cur_tmode stayed TMODE_COOK, so mch_breakcheck() never checked for
+typed keys: CTRL-C did not interrupt ":sleep", a long search, a slow ":g"
+or a running script, and was only seen as a key when they had finished.
+mch_delay() also never switched to TMODE_SLEEP.
+
+On VMS use cur_tmode, which settmode() keeps for every platform and from
+which it calls mch_settmode() when the mode changes.
+
+--- a/src/os_unix.c
++++ b/src/os_unix.c
+@@ -235,7 +235,15 @@
+ #endif
+ 
+ // Current terminal mode from mch_settmode().  Can differ from cur_tmode.
++#ifdef VMS
++// os_vms.c has its own mch_settmode(), which cannot keep the static
++// mch_cur_tmode up to date: use settmode()'s cur_tmode, which is the same.
++// Otherwise mch_breakcheck() never looks for typed keys, and CTRL-C cannot
++// interrupt ":sleep", a search or a running script.
++# define mch_cur_tmode cur_tmode
++#else
+ static tmode_T mch_cur_tmode = TMODE_COOK;
++#endif
+ 
+ #ifdef USE_XSMP
+ typedef struct
