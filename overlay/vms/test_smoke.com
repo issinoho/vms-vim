@@ -159,8 +159,8 @@ $ create CASE.TXT
 case
 $ 'vq' "+call writefile([rename('CASE.TXT', 'case.txt')], 'ren.txt')" "+qa!"
 $ call readall ren.txt
-$ found = f$search("case.txt")
-$ call check rename-case "got .eqs. ""0"" .and. f$locate(""]case.txt;"", found) .lt. f$length(found)"
+$ cased = f$search("case.txt")
+$ call check rename-case "got .eqs. ""0"" .and. f$locate(""]case.txt;"", cased) .lt. f$length(cased)"
 $!
 $! --- a vimrc that is a VAR file (as EDIT makes), with -u ----------------
 $ create rc.vim
