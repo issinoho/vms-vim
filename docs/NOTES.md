@@ -73,3 +73,12 @@ The C RTL sets TERM from the device type (`vt500-80` over ssh); Vim's builtin vt
 matches it. Cursor keys arrive as CSI sequences (ESC [ B) in normal cursor mode, and Vim
 does not switch to application mode (t_ks empty), so SS3 sequences are not expected.
 Vim's exit status is %X00030001 (success severity, with a facility code).
+
+## N10. $VIMRUNTIME without the VIM or VIMRUNTIME logicals (2026-10-26)
+
+With neither logical defined, Vim derives $VIMRUNTIME from how it was started, and with a
+foreign command (`vim :== $dev:[dir]VIM.EXE`) gets `$dev:[dir]VIM.EXE;`: the symbol's `$`
+and the file name stay in, so :help fails ("E149: Sorry, no help for help.txt"). The kit
+defines both logicals (D5), so installed Vim is not affected; to look at for a patch.
+Also: f$parse() returns ODS-5 names in the case they were made (lower case on IA64), so
+the tests build directory specs from its DEVICE and DIRECTORY fields.

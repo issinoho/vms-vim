@@ -24,8 +24,8 @@ Phase 1 (see [docs/PLAN.md](docs/PLAN.md)).
 | Step | IA64 (V8.4-2L3) | x86-64 (E9.2-4) |
 |------|-----------------|-----------------|
 | Build with upstream's Make_vms.mms + patch 0001 (`tools/build.sh`) | clean | clean |
-| DCL smoke test, 24 checks (`tools/test.sh`) | | 24/24 |
-| Interactive test, 20 checks (`tools/ttytest.sh`) | | 19/20 |
+| DCL smoke test, 25 checks (`tools/test.sh`) | 25/25 | 25/25 |
+| Interactive test, 20 checks (`tools/ttytest.sh`) | 20/20 | 20/20 |
 
 ## Workflow
 

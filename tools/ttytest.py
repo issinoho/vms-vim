@@ -67,6 +67,13 @@ class Session:
         self.child.send(text)
         self.pump(seconds)
 
+    def until(self, pred, seconds=20):
+        """Pump output until pred() is true or seconds pass (slow nodes)."""
+        end = time.time() + seconds
+        while time.time() < end and not pred():
+            self.pump(0.3)
+        return pred()
+
     def dcl(self, command, seconds=1.0):
         self.send(command + '\r', seconds)
 
@@ -87,7 +94,9 @@ def main():
     log = open(os.path.join(TOP, 'out', 'tty-%s.log' % node), 'w')
     results = []
 
-    def check(name, ok, s):
+    def check(name, pred, s):
+        # Wait for the screen to settle: the IA64 node has one slow CPU.
+        ok = s.until(pred, 15)
         results.append(ok)
         line = '%s %s' % ('PASS' if ok else 'FAIL', name)
         print(line, flush=True)
@@ -108,7 +117,11 @@ def main():
     s.dcl('set default %s' % s.workdir)
     s.dcl('set terminal/page=24/width=80')
     s.dcl('vim :== $\'f$parse("[.%s.SRC.%s]VIM.EXE")\'' % (tree, s.arch))
-    s.dcl('define/nolog vimruntime \'f$parse("[.%s.RUNTIME]") - ".;"\'' % tree)
+    # Device and directory, not f$parse() - ".;": the case of the result varies.
+    s.dcl('vrt = f$parse("[.%s.RUNTIME]",,,"DEVICE") + f$parse("[.%s.RUNTIME]",,,"DIRECTORY")'
+          % (tree, tree))
+    s.dcl("define/nolog vimruntime 'vrt'")
+    s.dcl('delete/symbol vrt')
     s.dcl('define/nolog tmp sys$scratch')
     # 200 numbered lines, a variable-length record file.
     # (Interactive DCL has no GOTO: the loop is a procedure.)
@@ -124,71 +137,76 @@ def main():
 
     # -u NONE -N: no vimrc, not vi-compatible; -i NONE: no viminfo; -n: no swap file.
     s.dcl('vim -u NONE -N -i NONE -n ttytest.txt', 4)
-    check('open', s.row(0) == 'line 001' and s.row(22) == 'line 023'
+    check('open', lambda: s.row(0) == 'line 001' and s.row(22) == 'line 023'
           and '"ttytest.txt"' in s.row(23) and '200' in s.row(23), s)
     s.send('\x06')
-    check('ctrl-f', s.row(0) == 'line 022', s)
+    check('ctrl-f', lambda: s.row(0) == 'line 022', s)
     s.send('G')
-    check('end', s.row(22) == 'line 200' and cursor_line(s) == 'line 200', s)
+    check('end', lambda: s.row(22) == 'line 200' and cursor_line(s) == 'line 200', s)
     s.send('gg')
-    check('start', s.row(0) == 'line 001' and s.screen.cursor.y == 0, s)
+    check('start', lambda: s.row(0) == 'line 001' and s.screen.cursor.y == 0, s)
     s.send('/line 150\r')
-    check('search', cursor_line(s) == 'line 150', s)
+    check('search', lambda: cursor_line(s) == 'line 150', s)
     # A VT terminal in normal cursor mode sends CSI; Vim's vt320 entry (TERM is
     # vt500-80 and the like) does not switch the cursor keys to SS3.
     s.send('\x1b[B')
-    check('arrow-down', cursor_line(s) == 'line 151', s)
+    check('arrow-down', lambda: cursor_line(s) == 'line 151', s)
     s.send('\x1b[A')
-    check('arrow-up', cursor_line(s) == 'line 150', s)
+    check('arrow-up', lambda: cursor_line(s) == 'line 150', s)
     s.send('ccHELLO\x7f\x7fP!\x1b')
-    check('insert-del', cursor_line(s) == 'HELP!', s)
+    check('insert-del', lambda: cursor_line(s) == 'HELP!', s)
     s.send('u')
-    check('undo', cursor_line(s) == 'line 150', s)
+    check('undo', lambda: cursor_line(s) == 'line 150', s)
     s.send('\x12')
-    check('redo', cursor_line(s) == 'HELP!', s)
-    s.send(':!show time\r', 4)
-    text = screen(s)
-    check('shell-cmd', re.search(r'\d{2}:\d{2}:\d{2}', text) is not None
-          and 'Press ENTER' in text, s)
+    check('redo', lambda: cursor_line(s) == 'HELP!', s)
+    s.send(':!show time\r', 1)
+    s.until(lambda: 'Press ENTER' in screen(s))
+    check('shell-cmd', lambda: re.search(r'\d{2}:\d{2}:\d{2}', screen(s)) is not None
+          and 'Press ENTER' in screen(s), s)
     s.send('\r')
-    check('shell-return', cursor_line(s) == 'HELP!', s)
+    check('shell-return', lambda: cursor_line(s) == 'HELP!', s)
     # CTRL/C interrupts a long command and leaves Vim running.
     s.send(':sleep 30\r', 1)
     s.send('\x03', 2)
     s.send(':echo "back"\r')
-    check('ctrl-c', s.row(23).startswith('back'), s)
+    check('ctrl-c', lambda: s.row(23).startswith('back'), s)
     # The runtime: help and syntax highlighting (VIMRUNTIME).
-    s.send(':help\r', 3)
-    check('help', 'help.txt' in screen(s) and 'VIM - main help file' in screen(s), s)
+    s.send(':help\r', 1)
+    s.until(lambda: 'VIM - main help file' in screen(s))
+    check('help', lambda: 'help.txt' in screen(s) and 'VIM - main help file' in screen(s), s)
     s.send(':q\r')
+    s.until(lambda: 'help.txt' not in screen(s))
     s.send(':syntax on\r:set filetype=c\r:call setline(1, "int x; /* c */")\r', 2)
-    attrs = [s.screen.buffer[0][x] for x in range(14)]
-    check('syntax', any(c.fg != 'default' for c in attrs), s)
+    s.until(lambda: any(s.screen.buffer[0][x].fg != 'default' for x in range(14)))
+    check('syntax', lambda: any(s.screen.buffer[0][x].fg != 'default' for x in range(14)), s)
     s.send('u:syntax off\r')
     # :w writes a new version; :q leaves with a success status.
-    s.send(':w\r', 2)
-    check('write', 'written' in s.row(23), s)
+    s.send(':w\r', 1)
+    s.until(lambda: 'written' in s.row(23))
+    check('write', lambda: 'written' in s.row(23), s)
     s.send(':q\r', 2)
     s.screen.reset()
     # Vim's exit status is %X00030001 (success, with a facility code):
     # what DCL tests is the severity.
     s.dcl('show symbol $severity')
-    check('status', '$SEVERITY == "1"' in screen(s), s)
+    check('status', lambda: '$SEVERITY == "1"' in screen(s), s)
     s.screen.reset()
     s.dcl('directory/notrailing/noheading ttytest.txt;*', 2)
-    check('new-version', ';2' in screen(s) and ';1' in screen(s), s)
+    check('new-version', lambda: ';2' in screen(s) and ';1' in screen(s), s)
     s.screen.reset()
     s.dcl('search ttytest.txt;0 "HELP!"', 2)
-    check('written-content', 'HELP!' in screen(s), s)
+    check('written-content', lambda: 'HELP!' in screen(s), s)
 
     # The screen size is the terminal's (SET TERMINAL), not a fixed 24x80.
     s.dcl('set terminal/page=12/width=80')
     s.screen.reset()
     s.dcl('vim -u NONE -N -i NONE -n ttytest.txt;1', 4)
-    rows = [s.row(i) for i in range(24)]
-    k = rows.index('line 001') if 'line 001' in rows else -99
-    check('page-size', k >= 0 and rows[k + 10] == 'line 011'
-          and '"ttytest.txt' in rows[k + 11] and 'line 012' not in rows, s)
+    def page_ok():
+        rows = [s.row(i) for i in range(24)]
+        k = rows.index('line 001') if 'line 001' in rows else -99
+        return (k >= 0 and k + 11 < 24 and rows[k + 10] == 'line 011'
+                and '"ttytest.txt' in rows[k + 11] and 'line 012' not in rows)
+    check('page-size', page_ok, s)
     s.send(':q\r', 2)
     s.dcl('set terminal/page=24/width=80')
     s.dcl('delete/nolog ttytest.txt;*')

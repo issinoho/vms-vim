@@ -32,8 +32,9 @@ signs off this plan and D1-D7.
 
 ## Phase 1: the editor works (started 2026-10-26)
 
-Status 2026-10-26: patches 0002-0006 (N3-N8). x86-64: smoke test 24/24, interactive test
-19/20 (the exit-status check was too strict, now fixed). IA64 being rebuilt.
+Status 2026-10-26: patches 0002-0006 (N3-N8). Both nodes: smoke test 25/25, interactive
+test 20/20. Still to do: the VIMRUNTIME fallback without logicals (N10), vimtutor, a look
+at upstream's src/testdir.
 
 - Smoke test (tools/test.sh, DCL, non-interactive): `-version`, `-es` scripts that edit and
   write files of each record format (STREAM_LF, VAR, VFC), new file versions, xxd round trip.

@@ -22,7 +22,7 @@ $ if image .eqs. "" then image = f$parse("[.SRC.''arch']VIM.EXE")
 $ xximage = p2
 $ if xximage .eqs. "" then xximage = f$parse("[.SRC.XXD.''arch']XXD.EXE")
 $ rtdir = p3
-$ if rtdir .eqs. "" then rtdir = f$parse("[.RUNTIME]") - ".;"
+$ if rtdir .eqs. "" then rtdir = f$parse("[.RUNTIME]",,,"DEVICE") + f$parse("[.RUNTIME]",,,"DIRECTORY")
 $ if f$search(image) .eqs. "" .or. f$search(xximage) .eqs. ""
 $ then
 $   write sys$error "SMOKE: no image ''image' or ''xximage'"
@@ -137,6 +137,14 @@ $ call check readfile-var "got .eqs. ""['the first line', 'line two, a little lo
 $ 'vq' "+call writefile([string(systemlist('write sys$output ""one""')), string(v:shell_error)], 'sys.txt')" "+qa!"
 $ call readall sys.txt
 $ call check systemlist "got .eqs. ""['one']|0"""
+$!
+$! --- a vimrc that is a VAR file (as EDIT makes), with -u ----------------
+$ create rc.vim
+set shiftwidth=3
+let g:rc_loaded = 'yes'
+$ vim -es -u rc.vim -i NONE -n "+call writefile([&shiftwidth, g:rc_loaded], 'rc.txt')" "+qa!"
+$ call readall rc.txt
+$ call check vimrc-var "got .eqs. ""3|yes"""
 $!
 $! --- the runtime: VIMRUNTIME, syntax, filetype, help ---------------------
 $ if f$search("''rtdir'DEFAULTS.VIM") .eqs. ""
