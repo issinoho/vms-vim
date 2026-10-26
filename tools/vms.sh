@@ -7,6 +7,7 @@
 #   vms.sh <node> dcl    '<dcl command>'                run one DCL command, print its output
 #   vms.sh <node> run    <local.com> [params...]        upload + run a procedure interactively
 #   vms.sh <node> batch  <local.com> [params...]        upload + SUBMIT, wait for the log, print it
+#                                                       ($VMS_SUBMIT_QUALS adds qualifiers)
 #
 # Output from `ssh host <cmd>` is unreliable on these nodes, so everything runs
 # with /OUTPUT (or a batch log) into the workdir and the log is fetched by sftp.
@@ -133,7 +134,8 @@ batch)
     sftp_batch "cd $SFTPDIR" "put $com" "-rm $log"
     plist=""
     for p in "$@"; do plist+="${plist:+,}\"$p\""; done
-    dcl_logged "\$ submit/noprint/log_file=${WORKDIR}${log}${plist:+/parameters=($plist)} ${WORKDIR}$(basename "$com")" >&2
+    # VMS_SUBMIT_QUALS: more SUBMIT qualifiers, e.g. /CPUTIME=00:30:00 to stop a runaway.
+    dcl_logged "\$ submit/noprint${VMS_SUBMIT_QUALS:-}/log_file=${WORKDIR}${log}${plist:+/parameters=($plist)} ${WORKDIR}$(basename "$com")" >&2
     # The log is held open by the batch job until it ends; sftp cannot read it until then.
     out=$(mktemp)
     for _ in $(seq 1 ${VMS_BATCH_POLLS:-360}); do

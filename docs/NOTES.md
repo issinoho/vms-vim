@@ -133,3 +133,27 @@ The real cause behind N11: during a long run (a build, the smoke test) the ssh s
 IA64 drops while the VMS process carries on. vms.sh took "ssh gone, no DONE marker" as the
 end and fetched a log that was still locked. It now keeps polling for DONE until the time
 limit.
+
+## N16. A first run of upstream's tests (2026-10-26, x86-64)
+
+tools/vimtests.sh with 37 core test files (docs/testruns/2026-10-26-x86-sample37.txt):
+1254 test functions executed, 141 failed (89 % pass), in one batch job with a CPU limit.
+Clean: cindent, fold, regexp_latin, regexp_utf8, syntax, textobjects, filter_map, let, join,
+changelist, charsearch, put, execute_func. Clusters to look at (Phase 1 follow-ups, not
+gating the kit):
+- test_vimscript, 63 failures, 42 of them "E484: Can't open file Xtest.out": one cause.
+- test_spell, 34 failures: "E751: Output file name must not have region name" from
+  :mkspell (its name parsing on VMS), then E756 for the tests that need the spell file.
+- test_edit: "Test caused Vim to exit" in a CursorHoldI test: with input from NL: (so that
+  no test can hang) Vim reads the end of input; upstream runs the tests in a terminal.
+- test_options: no messages file written; to see why.
+
+## N17. PCSI and a big runtime tree (2026-10-26, IA64)
+
+- Material is looked up by name in one flat directory, whatever the tree (as vms-mariadb
+  found): a tree-shaped material directory gives %PCSI-E-OPENIN for every file. With
+  `file [VIMPROBE.A]X.TXT source [000000]R0001.DAT ;` duplicate names package fine.
+- PCSI upper-cases names: `a^.b.json` is stored as `A^.B.JSON`, `[VIMPROBE.lower]` as
+  `[VIMPROBE.LOWER]`. A quoted name in the PDF is %PCSI-E-PDFIVS.
+- On ODS-5, RENAME can change only the case of a file (C.VIM -> c.vim, A^.B.JSON ->
+  a^.b.json). Renaming a directory file needs privilege (SYSTEM has it at install).

@@ -44,20 +44,27 @@ $ vim -f -u util/vms.vim -U NONE --noplugin --not-a-term -S runtest.vim 't'.vim
 $ st = $status
 $ ran = ran + 1
 $ summary = ""
+$ nskip = 0
 $ if f$search("messages.") .nes. ""
 $ then
 $   open/read m messages.
 $mloop:
 $   read/end=mdone m line
-$   if f$locate("Executed", line) .lt. f$length(line) .or. -
-       f$locate("FAILED", line) .lt. f$length(line) .or. -
-       f$locate("Skipped", line) .lt. f$length(line) then -
+$!  runtest.vim's totals ("Executed N tests in S seconds", "N FAILED:") and
+$!  the number of "Skipped" lines (one per skipped test function).
+$   len = f$length(line)
+$   if len .gt. 0 .and. f$locate("Executed ", line) .eq. 0 .and. f$locate("Test_", line) .eq. len then -
         summary = summary + " | " + f$edit(line, "TRIM,COMPRESS")
+$   if f$locate("FAILED", line) .lt. len then -
+        summary = summary + " | " + f$edit(line, "TRIM,COMPRESS")
+$   if f$locate("Skipped", line) .lt. len then nskip = nskip + 1
 $   goto mloop
 $mdone:
 $   close m
+$ else
+$   summary = " | no messages file"
 $ endif
-$ write sys$output "VIMTEST ''t' status=''st'''summary'"
+$ write sys$output "VIMTEST ''t' status=''st'''summary' | skipped ''nskip'"
 $ if f$search("test.log.") .nes. ""
 $ then
 $   write sys$output "VIMTEST-LOG ''t' begin"

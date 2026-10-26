@@ -32,9 +32,9 @@ signs off this plan and D1-D7.
 
 ## Phase 1: the editor works (started 2026-10-26)
 
-Status 2026-10-26: patches 0002-0008 (N3-N12). Both nodes: smoke test 27/27 (vimtutor
-included), interactive test 20/20. Upstream's testdir: harness written (tools/vimtests.sh),
-blocked by mkdir() with mixed specs, one form of which loops (N13). Next: that fix.
+Status 2026-10-26: patches 0002-0009 (N3-N14). Both nodes: smoke test 28/28 (vimtutor and
+mkdir included), interactive test 20/20. Upstream's tests, 37-file sample on x86-64: 1254
+run, 89 % pass (N16); the failure clusters are follow-ups, not gating Phase 2.
 
 - Smoke test (tools/test.sh, DCL, non-interactive): `-version`, `-es` scripts that edit and
   write files of each record format (STREAM_LF, VAR, VFC), new file versions, xxd round trip.
@@ -44,7 +44,14 @@ blocked by mkdir() with mixed specs, one form of which loops (N13). Next: that f
 - Upstream's own test suite (src/testdir): see how much runs under DCL; record, not gate.
 - Patches for whatever fails, each offered upstream.
 
-## Phase 2: the kit
+## Phase 2: the kit (started 2026-10-26)
+
+PCSI upper-cases every file name it installs (probe, N17), so runtime files would be
+SYNTAX/C.VIM: Vim still finds them (lookups ignore case), but listings and plugins that
+match names case-sensitively would not. The post-install step therefore renames the
+runtime back to its real case with Vim's own rename(), from a list prepare.sh makes.
+Material is flat (PCSI looks files up by name only): each runtime file gets a unique
+material name through the PDF's `source` clause.
 
 - PCSI kit ISSINOHO <base> VIM (D4, D5): VIM.EXE, XXD.EXE, the runtime tree (about 5,400
   files; prepare.sh generates the product description's file list), VIM$STARTUP.COM,
