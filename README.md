@@ -19,13 +19,14 @@ see [vms-grep](https://github.com/issinoho/vms-grep) for the list.
 
 ## Status
 
-Phase 1 (see [docs/PLAN.md](docs/PLAN.md)).
+Phases 0-2 done; release (Phase 4) next. See [docs/PLAN.md](docs/PLAN.md).
 
 | Step | IA64 (V8.4-2L3) | x86-64 (E9.2-4) |
 |------|-----------------|-----------------|
 | Build with upstream's Make_vms.mms + patch 0001 (`tools/build.sh`) | clean | clean |
-| DCL smoke test, 29 checks (`tools/test.sh`) | | |
-| PCSI kit `ISSINOHO <base> VIM V9.2-1240E1` (`tools/kit.sh`) | | built |
+| DCL smoke test, 29 checks (`tools/test.sh`) | 29/29 | 29/29 |
+| PCSI kit `ISSINOHO <base> VIM V9.2-1240E1` (`tools/kit.sh`) | built (52 MB) | built (49 MB) |
+| Install check (`tools/installcheck.sh`): install, smoke 27/27, clean removal | pass (17 min) | pass (5 min) |
 | Interactive test, 20 checks (`tools/ttytest.sh`) | 20/20 | 20/20 |
 
 ## Workflow
