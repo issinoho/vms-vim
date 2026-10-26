@@ -1,0 +1,89 @@
+Subject: VMS: mkdir(..., "p") loops; isdirectory() of "dir]/sub"
+
+gettail_sep() on VMS always stepped one character forward after backing
+over the separators, to keep a ']' or ':' with the path. With no separator
+it stepped into the name, so the "path" of "xb" was "x", and that of "x"
+was "x" again: mkdir("xb", "p") recursed for ever. With a '/' it kept the
+'/', so "dev:[dir]/a/" was its own parent, and for a VMS directory spec
+("[.xd]") the path is the whole name. mkdir(..., "p") of each of these used
+all the CPU until stopped. vimrc lines such as
+call mkdir(expand('~/.vim/undo'), 'p') are common.
+
+- gettail_sep(): step forward only over a ':', ']' or '>' that was found.
+- mkdir_recurse(): stop when there is no tail to split off.
+- mch_isdir(): stat() takes neither a mixed name ("dev:[dir]/sub") nor the
+  file form of a directory ("dev:[dir]sub", which is SUB.DIR), so mkdir()
+  made the directory and isdirectory() said it was not one; mkdir(d, "p")
+  then failed the second time. When stat() fails, try the name as
+  vms_fixfilename() gives it, then with ".DIR".
+
+--- a/src/filepath.c
++++ b/src/filepath.c
+@@ -1492,6 +1492,12 @@
+     p = gettail_sep(dir);
+     if (p <= get_past_head(dir))
+ 	return OK;
++#ifdef VMS
++    // A VMS directory spec ("[.a.b]", "dev:[dir]") has no tail to split
++    // off: without this it would be its own parent, for ever.
++    if (*p == NUL)
++	return OK;
++#endif
+ 
+     // If the directory exists we're done.  Otherwise: create it.
+     updir = vim_strnsave(dir, p - dir);
+@@ -2995,13 +3001,21 @@
+     char_u	*p;
+     char_u	*t;
+ 
++    char_u	*tail;
++
+     p = get_past_head(fname);	// don't remove the '/' from "c:/file"
+-    t = gettail(fname);
++    t = tail = gettail(fname);
+     while (t > p && after_pathsep(fname, t))
+ 	--t;
+ #ifdef VMS
+-    // path separator is part of the path
+-    ++t;
++    // ':', ']' and '>' are part of a VMS path, so keep the one found; a '/'
++    // is not, and with no separator at all there is nothing to keep.
++    // Stepping forward regardless made the "path" of "xb" "x", and so
++    // mkdir("xb", "p") recursed for ever.
++    if (t < tail && *t != '/')
++	++t;
++#else
++    (void)tail;
+ #endif
+     return t;
+ }
+--- a/src/os_unix.c
++++ b/src/os_unix.c
+@@ -3378,7 +3378,27 @@
+     if (*name == NUL)	    // Some stat()s don't flag "" as an error.
+ 	return FALSE;
+     if (stat((char *)name, &statb))
++    {
++#ifdef VMS
++	// The C RTL's stat() does not take a mixed name ("dev:[dir]/sub"),
++	// and the file form of a directory ("dev:[dir]sub") names its
++	// directory file SUB.DIR: try those forms.
++	char	*fixed = (char *)vms_fixfilename(name);
++	char	dirfile[MAXPATHL + 5];
++
++	if (stat(fixed, &statb) == 0)
++	    return (S_ISDIR(statb.st_mode) ? TRUE : FALSE);
++	if (*gettail((char_u *)fixed) == NUL
++		|| vim_strchr(gettail((char_u *)fixed), '.') != NULL
++		|| STRLEN(fixed) >= MAXPATHL)
++	    return FALSE;
++	vim_snprintf(dirfile, sizeof(dirfile), "%s.DIR", fixed);
++	if (stat(dirfile, &statb))
++	    return FALSE;
++#else
+ 	return FALSE;
++#endif
++    }
+     return (S_ISDIR(statb.st_mode) ? TRUE : FALSE);
+ }
+ 

@@ -149,6 +149,11 @@ $   write sys$output "SKIP env-no-symbol: the logical name VIM is defined"
 $   skip == skip + 1
 $ endif
 $!
+$! --- mkdir(.., 'p') with Unix, mixed and VMS names, twice: patch 0009 -----
+$ 'vq' "+call writefile([mkdir('mkd/sub', 'p'), mkdir(getcwd() .. '/mkd2/s', 'p'), mkdir('[.mkd3]', 'p'), mkdir('mkd/sub', 'p'), isdirectory('mkd/sub'), isdirectory(getcwd() .. '/mkd2/s'), isdirectory('[.mkd3]')], 'mk.txt')" "+qa!"
+$ call readall mk.txt
+$ call check mkdir-p "got .eqs. ""1|1|1|1|1|1|1"""
+$!
 $! --- a vimrc that is a VAR file (as EDIT makes), with -u ----------------
 $ create rc.vim
 set shiftwidth=3

@@ -109,9 +109,27 @@ $HOME = getcwd() .. '/XfakeHOME' and mkdir()s it. On VMS getcwd() is
 tools/vimtests.sh and [.VMS]RUN_TESTS.COM run chosen tests with input from NL: and report
 runtest.vim's summary; getting the suite going needs the mkdir() fix below first.
 
-mkdir() with mixed VMS and Unix specs: a probe of seven forms (`getcwd() .. '/xa'`, `xb`,
+mkdir() with mixed VMS and Unix specs (fixed by patch 0009, see N14): a probe of seven forms (`getcwd() .. '/xa'`, `xb`,
 `./xc`, `[.xd]`, `xf/xg`, `getcwd() .. '/xh/xi'`, `expand('~') .. '/x'`, all with 'p')
 left VIM.EXE spinning on x86-64, so one of them loops (mkdir_recurse() with VMS's path
 separators, filepath.c vim_ispathsep() treats : [ ] < > / all as separators). This also
 matters outside the tests: vimrc lines like `call mkdir(expand('~/.vim/undo'), 'p')` are
 common. Next: run the forms one at a time (each with a CPU-time limit) and fix.
+
+## N14. mkdir(..., 'p') loops; isdirectory() of mixed names (2026-10-26, x86-64)
+
+Each form run alone as a batch job with /CPUTIME=20: `mkdir(d, 'p')` hit the limit for
+`'xb'`, `'[.xd]'` and `getcwd() .. '/xh/xi'`; `getcwd() .. '/xa'` and `~/x` made the
+directory but isdirectory() said no. Causes: gettail_sep() on VMS always stepped one
+character forward, into the name when there was no separator ("xb" -> "x" -> "x" ...) and
+past a '/' (so "dir]/a/" was its own parent); mkdir_recurse() had no stop for a VMS
+directory spec; mch_isdir() stat()ed the name as given, and the C RTL takes neither a mixed
+name nor the file form of a directory (SUB.DIR). Patch 0009 fixes all three: every form
+then works, twice in a row, and isdirectory() agrees. Smoke check mkdir-p.
+
+## N15. vms.sh: long runs on IA64 came back empty (2026-10-26)
+
+The real cause behind N11: during a long run (a build, the smoke test) the ssh session to
+IA64 drops while the VMS process carries on. vms.sh took "ssh gone, no DONE marker" as the
+end and fetched a log that was still locked. It now keeps polling for DONE until the time
+limit.

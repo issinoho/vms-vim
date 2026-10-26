@@ -68,9 +68,11 @@ dcl_logged() {
     local waited=0 limit=${VMS_TIMEOUT:-600}
     while :; do
         sleep 2; waited=$((waited + 2))
-        if ! kill -0 "$pid" 2>/dev/null || [ $((waited % 10)) -eq 0 ]; then
+        # The ssh session can drop during a long run (seen on IA64) while the
+        # VMS process carries on: keep polling for the DONE marker, every 2 s
+        # at first and every 10 s once ssh has gone, until the time limit.
+        if [ $((waited % 10)) -eq 0 ] || { ! kill -0 "$pid" 2>/dev/null && [ "$waited" -le 10 ]; }; then
             sftp_batch "cd $SFTPDIR" "get $tag.DONE $done_f" 2>/dev/null && break
-            kill -0 "$pid" 2>/dev/null || { sleep 3; sftp_batch "cd $SFTPDIR" "get $tag.DONE $done_f" 2>/dev/null; break; }
         fi
         [ "$waited" -ge "$limit" ] && { echo "vms.sh: timed out after ${limit}s" >&2; break; }
     done

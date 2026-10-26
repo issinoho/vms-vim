@@ -6,3 +6,4 @@
 0006-vms-breakcheck-tmode.patch
 0007-vms-getenv-no-symbols.patch
 0008-vms-shellsize-unknown.patch
+0009-vms-mkdir-p-isdir.patch
