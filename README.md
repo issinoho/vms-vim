@@ -70,7 +70,7 @@ names PCSI cannot hold (Chinese GB and Big5 menu translations) are not in the ki
 
 ## Status
 
-Released as v9.2.1240-vms1. See [docs/PLAN.md](docs/PLAN.md) for the phases and
+Released as v9.2.1240-vms2. See [docs/PLAN.md](docs/PLAN.md) for the phases and
 [docs/NOTES.md](docs/NOTES.md) for what was found on the way.
 
 | Step | IA64 (V8.4-2L3) | x86-64 (E9.2-4) |
