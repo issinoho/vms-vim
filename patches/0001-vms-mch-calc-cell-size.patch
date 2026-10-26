@@ -1,0 +1,32 @@
+Subject: VMS: add mch_calc_cell_size()
+
+term.c's update_cell_size() calls mch_calc_cell_size() when FEAT_EVAL or
+FEAT_IMAGE is defined (added with image popups, PR #20136). os_unix.c defines
+it inside its #ifndef VMS block, next to the TIOCGWINSZ code VMS does not
+have, and os_vms.c has no version, so VIM.EXE fails to link on VMS:
+%ILINK-W-USEUNDEF, undefined symbol MCH_CALC_CELL_SIZE. Add one to os_vms.c
+that reports the cell size as unknown, as os_unix.c does when the ioctl fails.
+
+--- a/src/os_vms.c
++++ b/src/os_vms.c
+@@ -219,6 +219,20 @@
+     screen_start();
+ }
+ 
++# if defined(FEAT_EVAL) || defined(FEAT_IMAGE)
++/*
++ * Try to get the current terminal cell size.  The VMS terminal driver knows
++ * the size in characters only, so report it as unknown (-1 x -1); the caller
++ * then uses 8 x 16.
++ */
++    void
++mch_calc_cell_size(struct cellsize *cs_out)
++{
++    cs_out->cs_xpixel = -1;
++    cs_out->cs_ypixel = -1;
++}
++# endif
++
+     char_u *
+ mch_getenv(char_u *lognam)
+ {
