@@ -1,0 +1,18 @@
+=product @PRODUCER@ @BASE@ VIM @PCSIVERSION@ full
+1 'PRODUCER
+=prompt @PRODUCER@
+1 'PRODUCT
+=prompt Vim @VERSION@ for OpenVMS
+1 'NOTICE
+=prompt Vim is Charityware under the Vim License; see [VIM.DOC]LICENSE.
+1 RELEASE_NOTES
+=prompt Documentation is in [VIM.DOC]README.VMS under the installation directory.
+1 POST_INSTALL
+=prompt Post-installation tasks for Vim
+    At system startup: to define VIM$ROOT, VIM and VIMRUNTIME at every boot,
+    add this line to SYS$MANAGER:SYSTARTUP_VMS.COM:
+    $ @SYS$STARTUP:VIM$STARTUP.COM
+    For each user: to define the commands, add this line to LOGIN.COM:
+    $ @VIM$ROOT:[000000]VIM$SETUP.COM
+
+PRODUCT REMOVE VIM removes the product and deassigns the logical names.

@@ -24,7 +24,8 @@ Phase 1 (see [docs/PLAN.md](docs/PLAN.md)).
 | Step | IA64 (V8.4-2L3) | x86-64 (E9.2-4) |
 |------|-----------------|-----------------|
 | Build with upstream's Make_vms.mms + patch 0001 (`tools/build.sh`) | clean | clean |
-| DCL smoke test, 28 checks (`tools/test.sh`) | 28/28 | 28/28 |
+| DCL smoke test, 29 checks (`tools/test.sh`) | | |
+| PCSI kit `ISSINOHO <base> VIM V9.2-1240E1` (`tools/kit.sh`) | | built |
 | Interactive test, 20 checks (`tools/ttytest.sh`) | 20/20 | 20/20 |
 
 ## Workflow
@@ -36,6 +37,9 @@ tools/build.sh <node>                          # push and build with MMS
 tools/push.sh <node> runtime                   # once: the runtime files, for the tests
 tools/test.sh <node>                           # smoke test (non-interactive, on VMS)
 tools/ttytest.sh <node>                        # interactive test from the host (pexpect, pyte)
+tools/vimtests.sh <node> join,sort,...         # upstream's tests (push.sh <node> testdir first)
+tools/kit.sh <node>                            # PCSI kit -> out/kits/ (producer ISSINOHO)
+tools/installcheck.sh <node>                   # install, verify, remove (changes the system)
 ```
 
 ## What the port changes
@@ -51,5 +55,6 @@ tools/ttytest.sh <node>                        # interactive test from the host 
 | `0007-vms-getenv-no-symbols` | `$VIM` was the DCL symbol `vim` (the command itself) ([N10](docs/NOTES.md)) |
 | `0008-vms-shellsize-unknown` | With output to a file the screen was 12x2 ([N12](docs/NOTES.md)) |
 | `0009-vms-mkdir-p-isdir` | `mkdir(d, 'p')` looped; isdirectory() of `dir]/sub` ([N14](docs/NOTES.md)) |
+| `0010-vms-rename-case-only` | rename() that changed only the case left the file as `123.VIM` ([N17](docs/NOTES.md)) |
 | `vms/build.com` | Runs upstream's Make_vms.mms for VIM.EXE and XXD.EXE |
 | `vms/test_smoke.com`, `tools/ttytest.py` | Smoke test (DCL, `vim -es`) and interactive test (pexpect + pyte over ssh) |

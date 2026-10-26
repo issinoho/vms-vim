@@ -40,13 +40,40 @@ changed=$(comm -23 <(awk '{print $2" "$1}' "$pack.sha" | sort) \
 echo "push: $(echo "$changed" | grep -c . || true) changed of $(wc -l < "$pack.sha") files"
 # Explicit put per file: 'put -r' into an existing directory nests a copy instead.
 batch=$pack/sftp.batch
+# VMS's sftp server reads a final ".<digits>" after another dot as a version:
+# "xxd-fr.UTF-8.1" arrived as xxd-fr.UTF-8;1.  Upload those names with a "_"
+# added and rename them on the node, where xxd-fr^.UTF-8.1 is unambiguous.
+fixups=()
 {
     echo "-mkdir $SFTPDIR"
     echo "cd $SFTPDIR"
     (cd "$pack" && find "$remote" -type d) | sed 's/^/-mkdir /'
-    for f in $changed; do echo "put $pack/$f $f"; done
+    for f in $changed; do
+        if [[ $(basename "$f") =~ \.[^.]+\.[0-9]+$ ]]; then
+            echo "put $pack/$f ${f}_"; fixups+=("$f")
+        else
+            echo "put $pack/$f $f"
+        fi
+    done
 } > "$batch"
 sftp -P "$PORT" -i "${VMS_SSH_KEY:-$HOME/.ssh/vms_ed25519}" -o BatchMode=yes -b "$batch" "$USER@$HOST" \
     2>&1 >/dev/null | grep -vE '^ *Welcome to|^ *$|^remote mkdir .*Failure' >&2 || true
+if [ ${#fixups[@]} -gt 0 ]; then
+    fix=$pack/fixnames.com
+    {
+        echo '$ set noon'
+        echo '$ set process/parse_style=extended'
+        for f in "${fixups[@]}"; do
+            d=${WORKDIR%]}.$(dirname "$f" | tr / .)]
+            n=$(basename "$f"); head=${n%.*}; ext=${n##*.}
+            v="${head//./^.}.$ext"           # xxd-fr^.UTF-8.1
+            echo "\$ if f\$search(\"$d${v}_\") .nes. \"\" then rename/nolog $d${v}_ $d$v"
+            # and the copy the server stored as a version (xxd-fr.UTF-8;1)
+            echo "\$ if f\$search(\"$d${head};*\") .nes. \"\" then delete/nolog $d${head};*"
+        done
+    } > "$fix"
+    "$top/tools/vms.sh" "$node" run "$fix" >/dev/null
+    echo "push: renamed ${#fixups[@]} files whose names end in .<digits>"
+fi
 sort -u "$pack.sha" > "$manifest"
 echo "push: done"

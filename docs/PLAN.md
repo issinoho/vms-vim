@@ -53,6 +53,11 @@ runtime back to its real case with Vim's own rename(), from a list prepare.sh ma
 Material is flat (PCSI looks files up by name only): each runtime file gets a unique
 material name through the PDF's `source` clause.
 
+Status 2026-10-26: tools/kit.sh builds ISSINOHO-X86VMS-VIM-V0902-1240E1-1.PCSI (49 MB,
+5439 runtime files; two left out, N19). Patch 0010 (rename() of a case-only change lost
+the file's name) was needed for the case fix-up. Next: the IA64 kit, then the install
+check on each node (tools/installcheck.sh, PRODUCT INSTALL: with the user's go-ahead).
+
 - PCSI kit ISSINOHO <base> VIM (D4, D5): VIM.EXE, XXD.EXE, the runtime tree (about 5,400
   files; prepare.sh generates the product description's file list), VIM$STARTUP.COM,
   VIM$SETUP.COM, README.VMS, docs.

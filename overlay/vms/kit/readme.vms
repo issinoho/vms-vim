@@ -1,0 +1,64 @@
+Vim for OpenVMS
+===============
+
+This is Vim @VERSION@ (Vi IMproved), built natively for OpenVMS @ARCH@ from
+the signed upstream release plus the patches in the vms-vim project:
+
+    https://github.com/issinoho/vms-vim
+
+Kit version: @KITVERSION@.  Vim is Charityware under the Vim License; see
+LICENSE.  The full documentation is inside Vim: type :help, or :help vms for
+the notes on OpenVMS.
+
+Files
+-----
+    VIM$ROOT:[BIN]VIM.EXE, XXD.EXE
+    VIM$ROOT:[VIM92...]               the runtime: help, syntax, filetypes,
+                                      plugins, colour schemes, the tutor
+    VIM$ROOT:[DOC]                    this file, LICENSE
+    VIM$ROOT:[000000]VIM$SETUP.COM    defines the commands
+    VIM$ROOT:[000000]VIMTUTOR.COM     the tutor
+    SYS$STARTUP:VIM$STARTUP.COM       defines VIM$ROOT, VIM and VIMRUNTIME
+
+Setup
+-----
+The kit installs VIM$STARTUP.COM into SYS$STARTUP and runs it once.  To
+define the logical names at every boot, the system manager adds this line to
+SYS$MANAGER:SYSTARTUP_VMS.COM:
+
+    $ @SYS$STARTUP:VIM$STARTUP.COM
+
+Each user then defines the commands (for example in LOGIN.COM):
+
+    $ @VIM$ROOT:[000000]VIM$SETUP.COM
+
+which gives vim, vi, view (read-only), vimdiff, vimtutor and xxd, and
+defines TMP as SYS$SCRATCH if it is not defined.
+
+Settings: each user's in SYS$LOGIN:.vimrc (a file made with EDIT is fine);
+site-wide ones in VIM$ROOT:[000000]vimrc, which the kit does not ship, so an
+upgrade never replaces it.
+
+Use
+---
+    $ vim LOGIN.COM
+    $ view SYS$MANAGER:SYSTARTUP_VMS.COM
+    $ vimdiff OLD.TXT;1 OLD.TXT;2
+    $ pipe directory | vim -
+    $ vimtutor
+
+Vim writes a new version of the file, as other VMS editors do; variable-
+length, VFC and stream files can be edited (VFC is written back as
+variable-length).  :!command runs DCL; CTRL/C interrupts a search, a script
+or :sleep.  The screen size follows SET TERMINAL/WIDTH and /PAGE; VT100,
+VT200-VT500, DECterm and xterm-style terminals over ssh are supported.
+
+Options on the command line: "-x" is read as -x and "-/x" as -X with either
+DCL parse style; with SET PROCESS/PARSE_STYLE=EXTENDED a quoted option keeps
+its case ("-R").
+
+Known limits
+------------
+- Terminal Vim only: no GUI (gvim), no :terminal, no jobs or channels, no
+  Perl, Python, Lua or Ruby interfaces.
+- Plugins that run Unix commands (curl, git, grep) need those commands.

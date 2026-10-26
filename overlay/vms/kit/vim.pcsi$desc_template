@@ -1,0 +1,38 @@
+--
+-- PCSI product description for Vim on OpenVMS.
+-- Template: tools/prepare.sh substitutes @PRODUCER@, @BASE@ and @PCSIVERSION@, and
+-- puts the runtime's directories and files (about 5,400) in place of @RUNTIME@.
+-- PCSI looks material up by name in one flat directory, so each runtime file
+-- has a unique material name (source [000000]Rnnnnn.DAT; MAKE_KIT.COM copies
+-- them there).  PCSI stores names in upper case: VIM$STARTUP.COM INSTALL
+-- renames the runtime back (VIM$CASE.VIM).
+--
+product @PRODUCER@ @BASE@ VIM @PCSIVERSION@ full ;
+
+    information RELEASE_NOTES phase after ;
+
+    directory [VIM] ;
+    directory [VIM.BIN] ;
+    directory [VIM.DOC] ;
+
+    file [VIM.BIN]VIM.EXE ;
+    file [VIM.BIN]XXD.EXE ;
+    file [SYS$STARTUP]VIM$STARTUP.COM ;
+    file [VIM]VIM$SETUP.COM ;
+    file [VIM]VIMTUTOR.COM ;
+    file [VIM]VIM$CASE.VIM ;
+    file [VIM.DOC]README.VMS ;
+    file [VIM.DOC]LICENSE. ;
+
+@RUNTIME@
+
+    -- Define the logical names, give the runtime its real names and print the
+    -- post-installation tasks (PCSI shows only the title of an information
+    -- message unless /HELP is given).
+    execute postinstall "@PCSI$DESTINATION:[SYS$STARTUP]VIM$STARTUP.COM INSTALL" interactive ;
+    -- On removal, deassign the logical names.
+    execute install "CONTINUE" remove "@PCSI$DESTINATION:[SYS$STARTUP]VIM$STARTUP.COM REMOVE" ;
+
+    information POST_INSTALL phase after ;
+
+end product ;

@@ -1,0 +1,34 @@
+Subject: VMS: rename() that changes only the case lost the file's name
+
+With 'fileignorecase' (always on VMS), vim_rename() renames a file whose
+new name differs only in case through a temporary name: "from" with its
+tail replaced by a number. VMS rename() takes a missing file type from the
+old name, so "C.VIM" became "123.VIM" while Vim then looked for "123": the
+second step and the move back both failed, rename() returned -1 and the
+file was left as 123.VIM (a directory as 123.DIR).
+
+Keep the old name's type in the temporary name on VMS, or give an explicit
+null type ("123.").
+
+--- a/src/fileio.c
++++ b/src/fileio.c
+@@ -3936,7 +3936,19 @@
+ 	STRCPY(tempname, from);
+ 	for (n = 123; n < 99999; ++n)
+ 	{
++#ifdef VMS
++	    // rename() takes a missing file type from the old name: without
++	    // one "C.VIM" became "123.VIM" while Vim looked for "123", and then
++	    // neither step could find it.  Keep the type (".DIR" for a
++	    // directory), or give an explicit null one.
++	    char_u  *tail = gettail((char_u *)tempname);
++	    char_u  *ext = vim_strrchr(gettail(from), '.');
++
++	    vim_snprintf((char *)tail, sizeof(tempname) - (tail - (char_u *)tempname),
++				   "%d%s", n, ext == NULL ? "." : (char *)ext);
++#else
+ 	    sprintf((char *)gettail((char_u *)tempname), "%d", n);
++#endif
+ 	    if (mch_stat(tempname, &st) < 0)
+ 	    {
+ 		if (mch_rename((char *)from, tempname) == 0)

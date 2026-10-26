@@ -7,3 +7,4 @@
 0007-vms-getenv-no-symbols.patch
 0008-vms-shellsize-unknown.patch
 0009-vms-mkdir-p-isdir.patch
+0010-vms-rename-case-only.patch

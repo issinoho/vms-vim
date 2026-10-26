@@ -154,6 +154,14 @@ $ 'vq' "+call writefile([mkdir('mkd/sub', 'p'), mkdir(getcwd() .. '/mkd2/s', 'p'
 $ call readall mk.txt
 $ call check mkdir-p "got .eqs. ""1|1|1|1|1|1|1"""
 $!
+$! --- rename() that changes only the case: patch 0010 ----------------------
+$ create CASE.TXT
+case
+$ 'vq' "+call writefile([rename('CASE.TXT', 'case.txt')], 'ren.txt')" "+qa!"
+$ call readall ren.txt
+$ found = f$search("case.txt")
+$ call check rename-case "got .eqs. ""0"" .and. f$locate(""]case.txt;"", found) .lt. f$length(found)"
+$!
 $! --- a vimrc that is a VAR file (as EDIT makes), with -u ----------------
 $ create rc.vim
 set shiftwidth=3

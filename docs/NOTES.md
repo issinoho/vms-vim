@@ -157,3 +157,19 @@ gating the kit):
   `[VIMPROBE.LOWER]`. A quoted name in the PDF is %PCSI-E-PDFIVS.
 - On ODS-5, RENAME can change only the case of a file (C.VIM -> c.vim, A^.B.JSON ->
   a^.b.json). Renaming a directory file needs privilege (SYSTEM has it at install).
+
+## N18. sftp to VMS: a final ".<digits>" becomes a version (2026-10-26)
+
+VSI OpenSSH's sftp server stored `xxd-fr.UTF-8.1` as `xxd-fr.UTF-8;1`: after a dot it
+reads a final number as the version. The runtime has 43 such names (doc/*.UTF-8.1, the
+translated man pages), and MAKE_KIT's copy of them failed. push.sh now uploads them as
+`<name>_` and renames them on the node to `xxd-fr^.UTF-8.1` (and deletes the mangled copy).
+
+## N19. Two runtime files PCSI cannot name (2026-10-26)
+
+PCSI's product description rejects ODS-5 escapes for parentheses
+(`file [VIM.VIM92.LANG]MENU_CHINESE^(GB^)_GB^.936.VIM ...` is %PCSI-E-PDFIVS). The runtime
+has two such names, lang/menu_chinese(gb)_gb.936.vim and
+lang/menu_chinese(taiwan)_taiwan.950.vim: menu translations for Chinese GB2312 and Big5
+locales, used only by Vim's menus. gen_kit.py leaves them out and lists them; installing
+them under another name would leave PRODUCT REMOVE unable to find them.
