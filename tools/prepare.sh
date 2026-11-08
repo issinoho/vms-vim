@@ -55,7 +55,7 @@ if [ -d "$stage/vms/kit" ]; then
             -e "s/@PCSIVERSION@/$pcsiversion/g" -e "s/@VERSION@/$UPSTREAM_VERSION/g" \
             -e "s/@KITVERSION@/$kitversion/g" -e "s/@ARCH@/$2/g"
     }
-    for base in I64VMS X86VMS; do
+    for base in I64VMS X86VMS AXPVMS; do
         # awk, not sed's "r file": BSD sed (macOS) differs.
         subst $base "" < "$kit/vim.pcsi\$desc_template" |
             awk -v files="$kit/runtime.pdf" '/^@RUNTIME@$/ { while ((getline l < files) > 0) print l; next } { print }' \
